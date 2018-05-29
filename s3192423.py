@@ -51,7 +51,7 @@ dictionary_units = {
 }
 
 input_parser = {
-    'president':'head of state', # Sometimes requests with president give off prime ministers / do not work.
+    'president':'head of state',
 		'ingredients':'has part',
 		'members':'has part'
 }
@@ -89,7 +89,7 @@ for w in sys.stdin:
     if (last == "of?"):
         last = "of"
     for token in parse:
-        if token.dep_ == "nsubj" or token.dep_ == "attr" or token.dep_ == "dobj":
+        if token.dep_ == "nsubj" or token.dep_ == "attr" or token.dep_ == "dobj" or token.dep_ == "appos":
             sub = []
             for d in token.subtree:
                 if d.text == "of":
