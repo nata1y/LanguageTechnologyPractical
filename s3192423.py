@@ -68,7 +68,6 @@ for w in sys.stdin:
     for word in wordList:
 			  if word in stopWords:
 					  wordList.remove(word)
-
     # Format question using a dictionary to accomodate for the way
     # data is stored in wikiData. For now, only president is converted
     # to head of state, as the latter retrieves what the user actually wants.
