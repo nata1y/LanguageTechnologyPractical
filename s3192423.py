@@ -114,37 +114,54 @@ def getSearchProperty(sub):
     params['type'] = 'property';
     json = requests.get(url,params).json()
     query_property = '@'
-    for result in json['search']:
-        if ok == 1:
-            ok = 0
-            query_property = result['id']
+    if 'search' in json:
+        for result in json['search']:
+            if ok == 1:
+                ok = 0
+                query_property = result['id']
     return query_property
+
+def getSearchPropertyIterate(sub):
+    # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
+    # after an answer has been extracted
+    search_property = " ".join(sub)
+    # print(search_property)
+    params['search'] = search_property
+    params['type'] = 'property';
+    json = requests.get(url,params).json()
+    query_property = []
+    if 'search' in json:
+        for result in json['search']:
+            query_property.append(result['id'])
+    return query_property
+
 
 def getSearchObject(obj):
     # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
     # after an answer has been extracted
     ok = 1
     search_object = " ".join(obj)
-    print(search_object)
+    # print(search_object)
     params['search'] = search_object
     params['type'] = 'item'
     json = requests.get(url,params).json()
     query_object = '@'
-    for result in json['search']:
-        if ok == 1:
-            ok = 0
-            query_object = result['id']
+    if 'search' in json:
+        for result in json['search']:
+            if ok == 1:
+                ok = 0
+                query_object = result['id']
     return query_object
 
 def fireQuery(qo, qp):
     query='''
-        SELECT ?valueLabel WHERE {
-        wd:''' + query_object + ''' wdt:''' + query_property + ''' ?value
-        SERVICE wikibase:label {
-        bd:serviceParam wikibase:language "en" .
-        }
-        }
-        '''
+    SELECT ?valueLabel WHERE {
+    wd:''' + qo + ''' wdt:''' + qp + ''' ?value
+    SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en" .
+    }
+    }
+    '''
     print(query)
     url = 'https://query.wikidata.org/sparql'
     data = requests.get(url, params={'query': query, 'format': 'json'}).json()
@@ -201,20 +218,29 @@ for w in sys.stdin:
     sub = inputParse(sub)
     # Extract the search property and object to feed into the query.
     query_object = getSearchObject(obj)
-    query_property = getSearchProperty(sub)
-
-    if query_object != '@' and query_property != '@':
-        data = fireQuery(query_object, query_property)
+    query_property = getSearchPropertyIterate(sub)
+    if query_object != '@' and query_property:
+        for item in range(0, len(query_property)):  
+            data = fireQuery(query_object, query_property[item])
+            if data['results']['bindings']:
+                printAnswer(data)
+                break
         if not data['results']['bindings']:
             query_object = getSearchObject(sub)
-            query_property = getSearchProperty(obj)
-            data = fireQuery(query_object, query_property)
-    else:
-        query_object = getSearchObject(sub)
-        query_property = getSearchProperty(obj)
-        data = fireQuery(query_object, query_property)
-    printAnswer(data)
-    
+            query_property = getSearchPropertyIterate(obj)
+            if query_object != '@' and query_property:
+                for item in range(0, len(query_property)):  
+                    data = fireQuery(query_object, query_property[item])
+                    if data['results']['bindings']:
+                        printAnswer(data)
+                        break
+    if not data:
+        print('Unable to retrieve answer.')
+    # else:
+    #     query_object = getSearchObject(sub)
+    #     query_property = getSearchProperty(obj)
+    #     if query_object != '@' and query_property:
+    #         data = fireQuery(query_object, query_property)
     # Reinitialize lists to empty lists.
     del obj[:]
     del sub[:]
