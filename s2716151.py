@@ -134,6 +134,7 @@ for line in sys.stdin:
 
     paramsX['search'] = X
     json1 = requests.get(url2,paramsX).json()
+    print(json1)
     paramsY['search'] = Y
     json2 = requests.get(url2,paramsY).json()
     

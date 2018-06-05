@@ -30,7 +30,8 @@ dictionary_units = {
 input_parser = {
     'president':'head of state',
 		'ingredient':'has part',
-		'member':'has part'
+		'member':'has part',
+        'planet':'has part'
 }
 
 def print_example_queries():
@@ -162,7 +163,7 @@ def fireQuery(qo, qp):
     }
     }
     '''
-    print(query)
+    # print(query)
     url = 'https://query.wikidata.org/sparql'
     data = requests.get(url, params={'query': query, 'format': 'json'}).json()
     return data
@@ -204,6 +205,9 @@ for w in sys.stdin:
     if (last == "of?"):
         last = "of"
 
+    # Checks whether an answer has been given.
+    answer_given = 0
+
     # Count the number of "of" in the input.
     of_counter = countOf(word_list)
     current_counter = 0
@@ -224,6 +228,7 @@ for w in sys.stdin:
             data = fireQuery(query_object, query_property[item])
             if data['results']['bindings']:
                 printAnswer(data)
+                answer_given = 1
                 break
         if not data['results']['bindings']:
             query_object = getSearchObject(sub)
@@ -233,8 +238,9 @@ for w in sys.stdin:
                     data = fireQuery(query_object, query_property[item])
                     if data['results']['bindings']:
                         printAnswer(data)
+                        answer_given = 1
                         break
-    if not data:
+    if answer_given == 0:
         print('Unable to retrieve answer.')
     # else:
     #     query_object = getSearchObject(sub)
@@ -244,4 +250,3 @@ for w in sys.stdin:
     # Reinitialize lists to empty lists.
     del obj[:]
     del sub[:]
-
