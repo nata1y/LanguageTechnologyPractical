@@ -220,6 +220,7 @@ for w in sys.stdin:
     # In case no object was found, check for proper nouns.
     obj = checkForProperNouns(token, parse, obj)
     sub = inputParse(sub)
+
     # Extract the search property and object to feed into the query.
     query_object = getSearchObject(obj)
     query_property = getSearchPropertyIterate(sub)
@@ -242,6 +243,7 @@ for w in sys.stdin:
                         break
     if answer_given == 0:
         print('Unable to retrieve answer.')
+        
     # else:
     #     query_object = getSearchObject(sub)
     #     query_property = getSearchProperty(obj)
