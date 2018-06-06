@@ -47,10 +47,10 @@ def print_example_queries():
     print("10. What person is the president of Romania?")  # -Natasha -Gabriel
         
 def removeUnwantedWords(wList):
-    stopWords = ['an']
+    stopWords = ['an', 'a']
     for word in wordList:
-			  if word in stopWords:
-					  wordList.remove(word)
+        if word in stopWords:
+            wordList.remove(word)
     return wList
 
 def inputParse(wordList):
@@ -126,7 +126,7 @@ def getSearchPropertyIterate(sub):
     # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
     # after an answer has been extracted
     search_property = " ".join(sub)
-    # print(search_property)
+    print(search_property)
     params['search'] = search_property
     params['type'] = 'property';
     json = requests.get(url,params).json()
@@ -136,13 +136,12 @@ def getSearchPropertyIterate(sub):
             query_property.append(result['id'])
     return query_property
 
-
 def getSearchObject(obj):
     # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
     # after an answer has been extracted
     ok = 1
     search_object = " ".join(obj)
-    # print(search_object)
+    print(search_object)
     params['search'] = search_object
     params['type'] = 'item'
     json = requests.get(url,params).json()
@@ -212,8 +211,15 @@ for w in sys.stdin:
     of_counter = countOf(word_list)
     current_counter = 0
 
-    # Go through each token and extract the subject and object.
+    # Before continuing, here we would determine whether the question is a YES/NO question,
+    # a count question or a regular question.
+
+    # Function goes here..#
+
+    # Go through each token and extract the subject and object. FOR QUESTIONS
+    # OTHER THAN YES/NO. This should be a function.
     for token in parse:
+        print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
         sub = extractSubject(token, parse, current_counter, sub)
         obj = extractObject(token, parse, obj)
     
