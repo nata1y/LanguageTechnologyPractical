@@ -55,13 +55,12 @@ def extractSubject(t, p, sub, last, of_counter, current_counter):
                 current_counter = current_counter + 1
             print(d.text, "SUBTREEEEEEE")
             print(d.dep_, " OF ", d.text)
-            if (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
+            if (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV" and d.dep_ != "dative" and d.pos_ != "ADJ" and d.dep_ != "dobj" and d.dep_ != "aux"):
                 if (d.pos_ == 'VERB' or d.pos_ == 'NOUN') and (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
                     sub.append(d.lemma_)
                     print(d.lemma_, "lemmatized appended!")
 
                 elif d.pos_ != "ADP" and d.pos_ != "ADJ" and d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV":
-                    
                     print(d.text, " appended!")
                     sub.append(d.text)
                 else:
@@ -82,7 +81,11 @@ def extractObject(t, p, obj):
     if t.dep_ == "pobj" or t.dep_ == "dobj":
         obj = []
         for d in t.subtree:
-            obj.append(d.text)
+            if d.tag_ != "WDT":
+                if d.pos_ == "VERB" or d.pos_ == "NOUN":
+                    obj.append(d.lemma_)
+                else:
+                    obj.append(d.text)
         if obj[0] == 'the':
             del obj[0]
     return obj
@@ -293,11 +296,13 @@ def answerQuestionRegular(w):
     # In case no object was found, check for proper nouns.
     obj = checkForProperNouns(token, parse, obj)
     sub = inputParse(sub)
-
     # Extract the search property and object to feed into the query.
     query_object = getSearchObject(obj)
     query_property = getSearchPropertyIterate(sub)
+    print(query_property)
+    print(query_object)
     if query_object != '@' and query_property:
+        print("###############")
         for item in range(0, len(query_property)):  
             data = fireQuery(query_object, query_property[item])
             if data['results']['bindings']:
@@ -314,6 +319,15 @@ def answerQuestionRegular(w):
                         printAnswer(data)
                         answer_given = 1
                         break
+    else:
+        query_object = getSearchObject(sub)
+        query_property = getSearchPropertyIterate(obj)
+        for item in range(0, len(query_property)):  
+            data = fireQuery(query_object, query_property[item])
+            if data['results']['bindings']:
+                printAnswer(data)
+                answer_given = 1
+                break
     if answer_given == 0:
         print('Unable to retrieve answer.')
 
