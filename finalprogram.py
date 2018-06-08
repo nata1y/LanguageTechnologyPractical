@@ -30,6 +30,7 @@ code_dictionary = {
 }
 
 stopWords = ['an', 'a']
+current_counter = 0
 
 def removeUnwantedWords(wList):
     for word in wList:
@@ -43,28 +44,42 @@ def inputParse(wordList):
             wordList[x] = input_parser.get(wordList[x])
     return wordList
 
-def extractSubject(t, p, current_counter, sub, last, of_counter):
-    if t.dep_ == "nsubj" or t.dep_ == "attr" or t.dep_ == "dobj" or t.dep_ == "appos":
+def extractSubject(t, p, sub, last, of_counter, current_counter):
+    if (t.dep_ == "nsubj" or t.dep_ == "attr" or t.dep_ == "appos" or t.dep_ == "ROOT") and (t.pos_ != "ADV" and t.pos_ != "ADJ" or t.tag_ != "WP"):
         sub = []
+        print("Number of 'of' in sentence = ", of_counter)
+        print("Current number of 'of' in sentence = ", current_counter)
         print(t.text, "!!!")
         for d in t.subtree:
             if d.text == "of":
                 current_counter = current_counter + 1
-            if d.pos_ == 'VERB' or d.pos_ == 'NOUN':
-                sub.append(d.lemma_) 
-            elif d.pos_ != "ADP":
-                sub.append(d.text)
-            else:
-                if (d.text == last or current_counter != of_counter):
+            print(d.text, "SUBTREEEEEEE")
+            print(d.dep_, " OF ", d.text)
+            if (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
+                if (d.pos_ == 'VERB' or d.pos_ == 'NOUN') and (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
+                    sub.append(d.lemma_)
+                    print(d.lemma_, "lemmatized appended!")
+
+                elif d.pos_ != "ADP" and d.pos_ != "ADJ" and d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV":
+                    
+                    print(d.text, " appended!")
                     sub.append(d.text)
                 else:
-                    break
+                    print("LAST = ", last, "CURRENT COUNTER = ", current_counter, "OF COUNTER = ", of_counter)
+                    if (d.text == last or current_counter != of_counter):
+                        sub.append(d.text)
+                        print(d.text, " of appended!")
+
+                    else:
+                        break
+        if not sub:
+            sub.append(t.lemma_)
         if sub[0] == 'the':
-            del sub[0]
+                del sub[0]
     return sub
 
 def extractObject(t, p, obj):
-    if t.dep_ == "pobj":
+    if t.dep_ == "pobj" or t.dep_ == "dobj":
         obj = []
         for d in t.subtree:
             obj.append(d.text)
@@ -271,7 +286,7 @@ def answerQuestionRegular(w):
     current_counter = 0
     for token in parse:
         print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
-        sub = extractSubject(token, parse, current_counter, sub, last, of_counter)
+        sub = extractSubject(token, parse, sub, last, of_counter, current_counter)
         obj = extractObject(token, parse, obj)
     print("SUB = ", sub)
     print("OBJ = ", obj)
@@ -395,4 +410,5 @@ def answerQuesetionYesNo(parse):
         print('True')
 
 for w in sys.stdin:
+    current_counter = 0
     typeOfQuestion(w)
