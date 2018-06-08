@@ -3,28 +3,17 @@ import sys
 import requests
 import re
 
+# Who is the inventor of C? - weird funny answer
+# Spacy treats certain countries as verbs:
+    # Romania, Budapest   
+
 nlp = spacy.load('en')
-# An example of different formulations of the same question
-    # Who is the president of Japan?
-    # Name the president of Japan
-    # State the president of Japan
-    # What person is the president of Japan
-    # How is the president of Japan named?
+
+url = 'https://www.wikidata.org/w/api.php'
 
 params = {'action':'wbsearchentities',
           'language':'en',
           'format':'json'
-          }
-
-# Dictionary which is used to apply the appropriate unit of measure next to
-# numerical values in the answer output.
-dictionary_units = {
-    'height':'meters',
-    'area':'km squared',
-    'altitude':'meters',
-    'surface area':'km squared',
-    'radius':'km',
-    'perimeter':'km'
 }
 
 input_parser = {
@@ -42,39 +31,71 @@ code_dictionary = {
 
 stopWords = ['an', 'a']
 
+def removeUnwantedWords(wList):
+    for word in wList:
+        if word in stopWords:
+            wList.remove(word)
+    return wList
+
 def inputParse(wordList):
     for x in range(0, len(wordList)):
         if wordList[x] in input_parser:
             wordList[x] = input_parser.get(wordList[x])
     return wordList
 
-def removeUnwantedWords(wList):
-    for word in wordList:
-        if word in stopWords:
-            wordList.remove(word)
-    return wList
+def extractSubject(t, p, current_counter, sub, last, of_counter):
+    if t.dep_ == "nsubj" or t.dep_ == "attr" or t.dep_ == "dobj" or t.dep_ == "appos":
+        sub = []
+        print(t.text, "!!!")
+        for d in t.subtree:
+            if d.text == "of":
+                current_counter = current_counter + 1
+            if d.pos_ == 'VERB' or d.pos_ == 'NOUN':
+                sub.append(d.lemma_) 
+            elif d.pos_ != "ADP":
+                sub.append(d.text)
+            else:
+                if (d.text == last or current_counter != of_counter):
+                    sub.append(d.text)
+                else:
+                    break
+        if sub[0] == 'the':
+            del sub[0]
+    return sub
 
-def extractObjectYesNo(t, p, obj):
-    print("TEXT TO BE CHECKED IN OBJECT: ", t.text)
-    if t.text in stopWords:
-        print("I AM IN STOPWORDS OBJECT")
-        pass
-    elif t.dep_ == "pobj" or t.dep_ == "dobj":
+def extractObject(t, p, obj):
+    if t.dep_ == "pobj":
         obj = []
         for d in t.subtree:
-            if d.text not in stopWords:
-                obj.append(d.text)
+            obj.append(d.text)
+        if obj[0] == 'the':
+            del obj[0]
+    return obj
+
+def extractPropertyYesNo(t, p, prop):
+    print("DEPENDENCY OF PROPERTY", t.text, " = ", t.dep_)
+    if (t.dep_ == "attr" or t.pos_ == "NOUN") and (t.dep_ != "dobj" and t.dep_ != "pobj"):
+        for d in t.subtree:
+            if (d.dep_ == "attr" or d.pos_ == "NOUN") and (d.dep_ != "dobj" and d.dep_ != "pobj"):
+                prop.append(d.text)
+                print("APPENDED PROPERTY LIST = ", d.text)
+    if not prop:
+        if t.dep_ == "prep":
+            prop.append(t.text)
+    return prop
+
+def extractObjectYesNo(t, p, obj):
+    if t.dep_ == "pobj" or t.dep_ == "dobj":
+        obj = []
+        for d in t.subtree:
+            obj.append(d.text)
         if obj[0] == "the":
             del obj[0]
     return obj
 
 def extractSubjectYesNo(t, p, sub, obj):
-    print("TEXT TO BE CHECKED IN SUBJECT: ", t.text)
-    print("STOPWORDS: ", stopWords)
-    if t.text in stopWords:
-        print("I AM IN STOPWORDS SUBJECT")
-        pass
-    elif (t.pos_ == "PROPN" or t.dep_ == "nsubj") and t.dep_ != "attr" and t.dep_ != "pobj" and t.dep_ != "dobj" and t.text not in obj:
+    print(t, p, sub, obj)
+    if (t.pos_ == "PROPN" or t.dep_ == "nsubj") and t.dep_ != "attr" and t.dep_ != "pobj" and t.dep_ != "dobj" and t.text not in obj:
         print("The SUBJECT that is about to be appended:", t.text)
         sub.append(t.text) 
         # for d in t.subtree:
@@ -85,11 +106,19 @@ def extractSubjectYesNo(t, p, sub, obj):
     print(sub)
     return sub
 
+def checkForProperNouns(t, p, obj):
+    if not obj:
+        for t in p:
+            if t.pos_ == "PROPN":
+                obj = []
+                for d in t.subtree:
+                    obj.append(d.text)
+    return obj
 
-def getSearchPropertyIterate(prop):
+def getSearchPropertyIterate(sub):
     # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
     # after an answer has been extracted
-    search_property = " ".join(prop)
+    search_property = " ".join(sub)
     print(search_property)
     params['search'] = search_property
     params['type'] = 'property';
@@ -99,7 +128,6 @@ def getSearchPropertyIterate(prop):
         for result in json['search']:
             query_property.append(result['id'])
     return query_property
-
 
 def getSearchObject(obj):
     # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
@@ -135,18 +163,6 @@ def getSearchSubject(sub):
                 query_subject = result['id']
     return query_subject
 
-def extractProperty(t, p, prop):
-    print("DEPENDENCY OF PROPERTY", t.text, " = ", t.dep_)
-    if (t.dep_ == "attr" or t.pos_ == "NOUN") and (t.dep_ != "dobj" and t.dep_ != "pobj"):
-        for d in t.subtree:
-            if (d.dep_ == "attr" or d.pos_ == "NOUN") and (d.dep_ != "dobj" and d.dep_ != "pobj"):
-                prop.append(d.text)
-                print("APPENDED PROPERTY LIST = ", d.text)
-    if not prop:
-        if t.dep_ == "prep":
-            prop.append(t.text)
-    return prop
-
 def checkProperty(qs, qp):
     if qp == []:
         return False
@@ -161,9 +177,19 @@ def checkProperty(qs, qp):
     print("data.get(boolean) = ", data.get('boolean'))
     return data.get('boolean')
 
-
-def printAnswer(data):
-    print(data.get('boolean'))
+def fireQuery(qo, qp):
+    query='''
+    SELECT ?valueLabel WHERE {
+    wd:''' + qo + ''' wdt:''' + qp + ''' ?value
+    SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en" .
+    }
+    }
+    '''
+    # print(query)
+    url = 'https://query.wikidata.org/sparql'
+    data = requests.get(url, params={'query': query, 'format': 'json'}).json()
+    return data
 
 def fireQueryYesNo(qs, qp, qo):
     query='''
@@ -175,6 +201,14 @@ def fireQueryYesNo(qs, qp, qo):
     data = requests.get(url, params={'query': query, 'format': 'json'}).json()
     return data
 
+def countOf(wList):
+    of_counter = 0
+    for i in range(0, len(wList)):
+        if wList[i] == "of" or wList[i] == "of?":
+            of_counter +=1;
+    return of_counter
+
+
 def fireQueryYesNoNoProperty(qs, qo):
     query='''
     ASK {
@@ -185,30 +219,102 @@ def fireQueryYesNoNoProperty(qs, qo):
     data = requests.get(url, params={'query': query, 'format': 'json'}).json()
     return data
 
-for w in sys.stdin:
+def printAnswer(data):
+    if not data['results']['bindings']:
+        print('Unable to retrieve answer.')
+    else:
+        for item in data['results']['bindings']:
+            for var in item:
+                sys.stdout.write('{}'.format(item[var]['value']))
+                sys.stdout.write('\n')
+
+def typeOfQuestion(parse):
+    temp = nlp(parse)
+    print(temp)
+    if (temp[0].tag_ == "VBZ"):
+        answerQuesetionYesNo(parse)
+    else:
+        answerQuestionRegular(parse)
+
+def answerQuestionRegular(w):  
+    # Initialize lists.
+    obj = []
+    sub = []
+    data = []
+
+    # Set up initial parameters.
+    params['type'] = 'item'
+
+    # Parse the input as a list of words.
+    wordList = re.sub("[^\w]", " ",  w).split()
+    wordList = removeUnwantedWords(wordList)
+    
+    # Convert the input from a word of list to nlp strip
+    stri = " ".join(wordList)
+    w = stri
+    parse = nlp(w.strip())
+    
+    # Take the first and last word of the input for research purposes.
+    word_list = w.split()
+    first = word_list[0]
+    last = word_list[len(word_list)-1]
+
+    # Take the last word without the question mark.
+    if (last == "of?"):
+        last = "of"
+
+    # Checks whether an answer has been given.
+    answer_given = 0
+
+    # Count the number of "of" in the input.
+    of_counter = countOf(word_list)
+    current_counter = 0
+    for token in parse:
+        print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
+        sub = extractSubject(token, parse, current_counter, sub, last, of_counter)
+        obj = extractObject(token, parse, obj)
+    print("SUB = ", sub)
+    print("OBJ = ", obj)
+    # In case no object was found, check for proper nouns.
+    obj = checkForProperNouns(token, parse, obj)
+    sub = inputParse(sub)
+
+    # Extract the search property and object to feed into the query.
+    query_object = getSearchObject(obj)
+    query_property = getSearchPropertyIterate(sub)
+    if query_object != '@' and query_property:
+        for item in range(0, len(query_property)):  
+            data = fireQuery(query_object, query_property[item])
+            if data['results']['bindings']:
+                printAnswer(data)
+                answer_given = 1
+                break
+        if not data['results']['bindings']:
+            query_object = getSearchObject(sub)
+            query_property = getSearchPropertyIterate(obj)
+            if query_object != '@' and query_property:
+                for item in range(0, len(query_property)):  
+                    data = fireQuery(query_object, query_property[item])
+                    if data['results']['bindings']:
+                        printAnswer(data)
+                        answer_given = 1
+                        break
+    if answer_given == 0:
+        print('Unable to retrieve answer.')
+
+def answerQuesetionYesNo(parse):
     # Initialize lists.
     obj = []
     sub = []
     data = []
     prop = []
-
-    # Set up initial parameters.
-    url = 'https://www.wikidata.org/w/api.php'
     params['type'] = 'item'
 
-    # Parse the input as a list of words.
-    #wordList = re.sub("[^\w]", " ",  w).split()
-    #wordList = removeUnwantedWords(wordList)
-    
-    # Convert the input from a word of list to nlp strip
-    #stri = " ".join(wordList)
-    #w = stri
     parse = nlp(w.strip())
     
     # Checks whether an answer has been given.
     answer_given = 0
 
-    print("Objects:")
     for token in parse:
         obj = extractObjectYesNo(token, parse, obj)
     print("Object after extraction: ", obj)
@@ -219,7 +325,7 @@ for w in sys.stdin:
         sub = extractSubjectYesNo(token, parse, sub, obj)
     print("Subject after extraction: ", sub)
     for token in parse:
-        prop = extractProperty(token ,parse, prop)
+        prop = extractPropertyYesNo(token ,parse, prop)
     print("Property after extraction: ", prop)
     inputParse(prop)
     query_subject = getSearchSubject(sub)
@@ -287,6 +393,6 @@ for w in sys.stdin:
         print('False')
     else:
         print('True')
-    del sub[:]
-    del prop[:]
-    del obj[:]
+
+for w in sys.stdin:
+    typeOfQuestion(w)

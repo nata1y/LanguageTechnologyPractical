@@ -88,9 +88,9 @@ def extractSubject(t, p, current_counter, sub):
     return sub
 
 def extractObject(t, p, obj):
-    if token.dep_ == "pobj":
+    if t.dep_ == "pobj":
         obj = []
-        for d in token.subtree:
+        for d in t.subtree:
             obj.append(d.text)
         if obj[0] == 'the':
             del obj[0]
