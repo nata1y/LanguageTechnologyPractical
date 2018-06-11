@@ -55,11 +55,10 @@ def extractSubject(t, p, sub, last, of_counter, current_counter):
                 current_counter = current_counter + 1
             print(d.text, "SUBTREEEEEEE")
             print(d.dep_, " OF ", d.text)
-            if (d.dep_ != "intj" and d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV" and d.dep_ != "dative" and d.pos_ != "ADJ" and d.dep_ != "dobj" and d.dep_ != "aux"):
+            if (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
                 if (d.pos_ == 'VERB' or d.pos_ == 'NOUN') and (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
                     sub.append(d.lemma_)
                     print(d.lemma_, "lemmatized appended!")
-
                 elif d.pos_ != "ADP" and d.pos_ != "ADJ" and d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV":
                     print(d.text, " appended!")
                     sub.append(d.text)
@@ -68,24 +67,52 @@ def extractSubject(t, p, sub, last, of_counter, current_counter):
                     if (d.text == last or current_counter != of_counter):
                         sub.append(d.text)
                         print(d.text, " of appended!")
-
                     else:
                         break
         if not sub:
+            print("#########################")
             sub.append(t.lemma_)
         if sub[0] == 'the':
-                del sub[0]
+            del sub[0]
+    return sub
+
+def extractSubjectCount(t, p, sub, last, of_counter, current_counter):
+    if (t.dep_ == "nsubj" or t.dep_ == "attr" or t.dep_ == "appos" or t.dep_ == "ROOT") and (t.pos_ != "ADV" and t.pos_ != "ADJ" or t.tag_ != "WP"):
+        sub = []
+        print("t.text = ", t.text)
+        print("entering subtree")
+        print(t.subtree)
+        for d in t.subtree:
+            print("d.text of subtree = ", d.text)
+            if d.text == "of":
+                current_counter = current_counter + 1
+            print("The dep of ", d.text, " is ", d.dep_, ".")
+            if (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
+                if (d.pos_ == 'VERB' or d.pos_ == 'NOUN') and (d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV"):
+                    sub.append(d.lemma_)
+                    print(d.lemma_, "lemmatized appended!")
+                elif d.pos_ != "ADP" and d.pos_ != "ADJ" and d.tag_ != "WP" and d.dep_ != "ROOT" and d.pos_ != "ADV":
+                    print(d.text, " appended!")
+                    sub.append(d.text)
+                else:
+                    print("LAST = ", last, "CURRENT COUNTER = ", current_counter, "OF COUNTER = ", of_counter)
+                    if (d.text == last or current_counter != of_counter):
+                        sub.append(d.text)
+                        print(d.text, " of appended!")
+                    else:
+                        break
+        if not sub:
+            print("#########################")
+            sub.append(t.lemma_)
+        if sub[0] == 'the':
+            del sub[0]
     return sub
 
 def extractObject(t, p, obj):
     if t.dep_ == "pobj" or t.dep_ == "dobj":
         obj = []
         for d in t.subtree:
-            if d.tag_ != "WDT":
-                if d.pos_ == "VERB" or d.pos_ == "NOUN":
-                    obj.append(d.lemma_)
-                else:
-                    obj.append(d.text)
+            obj.append(d.text)
         if obj[0] == 'the':
             del obj[0]
     return obj
@@ -132,6 +159,30 @@ def checkForProperNouns(t, p, obj):
                 for d in t.subtree:
                     obj.append(d.text)
     return obj
+
+def extractSubjectVersionTwo(token, p, current_counter, sub, last, of_counter):
+    if token.dep_ == "nsubj" or token.dep_ == "attr" or token.dep_ == "dobj" or token.dep_ == "appos":
+        sub = []
+        print(token.text, "!!!")
+        for d in token.subtree:
+            print(d.text, "SUBTREEEEEEE")
+            if d.text == "of":
+                current_counter = current_counter + 1
+            if d.pos_ == 'VERB' or d.pos_ == 'NOUN':
+                print(d.lemma_, "lemmatized appended!")
+                sub.append(d.lemma_) 
+            elif d.pos_ != "ADP":
+                sub.append(d.text)
+                print(d.text, " appended!")
+            else:
+                if (d.text == last or current_counter != of_counter):
+                    sub.append(d.text)
+                    print(d.text, " of appended!")
+                else:
+                    break
+        if sub[0] == 'the':
+            del sub[0]
+    return sub
 
 def getSearchPropertyIterate(sub):
     # Ok is a boolean initialized to 1 to extract only one answer. Ok becomes 0
@@ -246,15 +297,165 @@ def printAnswer(data):
                 sys.stdout.write('{}'.format(item[var]['value']))
                 sys.stdout.write('\n')
 
+def checkIfCount(temp):
+    how_check = 0
+    many_check = 0
+    for word in temp:
+        print("WORD.TEXT = ", word.text)
+        if word.text == 'how' or word.text == 'How':
+            how_check = 1
+        if word.text == 'many' or word.text == 'Many':
+            many_check = 1
+    if (how_check and many_check):
+        return True
+    return False
+
 def typeOfQuestion(parse):
     temp = nlp(parse)
     print(temp)
     if (temp[0].tag_ == "VBZ"):
         answerQuesetionYesNo(parse)
+    elif (checkIfCount(temp)):
+        answerQuestionCount(parse)
     else:
         answerQuestionRegular(parse)
 
-def answerQuestionRegular(w):  
+def answerQuestionCount(w):
+# Initialize lists.
+    obj = []
+    sub = []
+    data = []
+
+    # Set up initial parameters.
+    params['type'] = 'item'
+
+    # Parse the input as a list of words.
+    wordList = re.sub("[^\w]", " ",  w).split()
+    wordList = removeUnwantedWords(wordList)
+    
+    # Convert the input from a word of list to nlp strip
+    stri = " ".join(wordList)
+    w = stri
+    parse = nlp(w.strip())
+    
+    # Take the first and last word of the input for research purposes.
+    word_list = w.split()
+    first = word_list[0]
+    last = word_list[len(word_list)-1]
+
+    # Take the last word without the question mark.
+    if (last == "of?"):
+        last = "of"
+
+    # Checks whether an answer has been given.
+    answer_given = 0
+
+    # Count the number of "of" in the input.
+    of_counter = countOf(word_list)
+    current_counter = 0
+    
+    data_counter = 0
+    for token in parse:
+        print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
+        sub = extractSubjectCount(token, parse, sub, last, of_counter, current_counter)
+        obj = extractObject(token, parse, obj)
+    print("SUB = ", sub)
+    print("OBJ = ", obj)
+    # In case no object was found, check for proper nouns.
+    obj = checkForProperNouns(token, parse, obj)
+    sub = inputParse(sub)
+
+    # Extract the search property and object to feed into the query.
+    query_object = getSearchObject(obj)
+    query_property = getSearchPropertyIterate(sub)
+    if query_object != '@' and query_property:
+        for item in range(0, len(query_property)):  
+            data = fireQuery(query_object, query_property[item])
+            if data['results']['bindings']:
+                print(len(data['results']['bindings']))
+                answer_given = 1
+                break
+        if not data['results']['bindings']:
+            query_object = getSearchObject(sub)
+            query_property = getSearchPropertyIterate(obj)
+            if query_object != '@' and query_property:
+                for item in range(0, len(query_property)):  
+                    data = fireQuery(query_object, query_property[item])
+                    if data['results']['bindings']:
+                        print(len(data['results']['bindings']))
+                        answer_given = 1
+                        break
+    if answer_given == 0:
+        obj = []
+        sub = []
+        data = []
+        params['type'] = 'item'
+
+        # Parse the input as a list of words.
+        wordList = re.sub("[^\w]", " ",  w).split()
+        wordList = removeUnwantedWords(wordList)
+        
+        # Convert the input from a word of list to nlp strip
+        stri = " ".join(wordList)
+        w = stri
+        parse = nlp(w.strip())
+        
+        # Take the first and last word of the input for research purposes.
+        word_list = w.split()
+        first = word_list[0]
+        last = word_list[len(word_list)-1]
+
+        # Take the last word without the question mark.
+        if (last == "of?"):
+            last = "of"
+
+        # Checks whether an answer has been given.
+        answer_given = 0
+
+        # Count the number of "of" in the input.
+        of_counter = countOf(word_list)
+        current_counter = 0
+
+        # Before continuing, here we would determine whether the question is a YES/NO question,
+        # a count question or a regular question.
+
+        # Function goes here..#
+
+        # Go through each token and extract the subject and object. FOR QUESTIONS
+        # OTHER THAN YES/NO. This should be a function.
+        for token in parse:
+            print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
+            sub = extractSubjectVersionTwo(token, parse, current_counter, sub, last, of_counter)
+            obj = extractObject(token, parse, obj)
+        
+        # In case no object was found, check for proper nouns.
+        obj = checkForProperNouns(token, parse, obj)
+        sub = inputParse(sub)
+
+        # Extract the search property and object to feed into the query.
+        query_object = getSearchObject(obj)
+        query_property = getSearchPropertyIterate(sub)
+        if query_object != '@' and query_property:
+            for item in range(0, len(query_property)):  
+                data = fireQuery(query_object, query_property[item])
+                if data['results']['bindings']:
+                    print(len(data['results']['bindings']))
+                    answer_given = 1
+                    break
+            if not data['results']['bindings']:
+                query_object = getSearchObject(sub)
+                query_property = getSearchPropertyIterate(obj)
+                if query_object != '@' and query_property:
+                    for item in range(0, len(query_property)):  
+                        data = fireQuery(query_object, query_property[item])
+                        if data['results']['bindings']:
+                            print(len(data['results']['bindings']))
+                            answer_given = 1
+                            break
+    if answer_given == 0:
+        print("Unable to retrieve answer.")
+
+def answerQuestionRegular(w):
     # Initialize lists.
     obj = []
     sub = []
@@ -295,14 +496,18 @@ def answerQuestionRegular(w):
     print("OBJ = ", obj)
     # In case no object was found, check for proper nouns.
     obj = checkForProperNouns(token, parse, obj)
+
+    # In case no subject was found, check with other subject parsing method.
+    if not sub:
+        for token in parse:
+            sub = extractSubjectVersionTwo(token, parse, current_counter, sub, last, of_counter)
     sub = inputParse(sub)
+
+    
     # Extract the search property and object to feed into the query.
     query_object = getSearchObject(obj)
     query_property = getSearchPropertyIterate(sub)
-    print(query_property)
-    print(query_object)
     if query_object != '@' and query_property:
-        print("###############")
         for item in range(0, len(query_property)):  
             data = fireQuery(query_object, query_property[item])
             if data['results']['bindings']:
@@ -319,17 +524,75 @@ def answerQuestionRegular(w):
                         printAnswer(data)
                         answer_given = 1
                         break
-    else:
-        query_object = getSearchObject(sub)
-        query_property = getSearchPropertyIterate(obj)
-        for item in range(0, len(query_property)):  
-            data = fireQuery(query_object, query_property[item])
-            if data['results']['bindings']:
-                printAnswer(data)
-                answer_given = 1
-                break
     if answer_given == 0:
-        print('Unable to retrieve answer.')
+        obj = []
+        sub = []
+        data = []
+        params['type'] = 'item'
+
+        # Parse the input as a list of words.
+        wordList = re.sub("[^\w]", " ",  w).split()
+        wordList = removeUnwantedWords(wordList)
+        
+        # Convert the input from a word of list to nlp strip
+        stri = " ".join(wordList)
+        w = stri
+        parse = nlp(w.strip())
+        
+        # Take the first and last word of the input for research purposes.
+        word_list = w.split()
+        first = word_list[0]
+        last = word_list[len(word_list)-1]
+
+        # Take the last word without the question mark.
+        if (last == "of?"):
+            last = "of"
+
+        # Checks whether an answer has been given.
+        answer_given = 0
+
+        # Count the number of "of" in the input.
+        of_counter = countOf(word_list)
+        current_counter = 0
+
+        # Before continuing, here we would determine whether the question is a YES/NO question,
+        # a count question or a regular question.
+
+        # Function goes here..#
+
+        # Go through each token and extract the subject and object. FOR QUESTIONS
+        # OTHER THAN YES/NO. This should be a function.
+        for token in parse:
+            print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
+            sub = extractSubjectVersionTwo(token, parse, current_counter, sub, last, of_counter)
+            obj = extractObject(token, parse, obj)
+        
+        # In case no object was found, check for proper nouns.
+        obj = checkForProperNouns(token, parse, obj)
+        sub = inputParse(sub)
+
+        # Extract the search property and object to feed into the query.
+        query_object = getSearchObject(obj)
+        query_property = getSearchPropertyIterate(sub)
+        if query_object != '@' and query_property:
+            for item in range(0, len(query_property)):  
+                data = fireQuery(query_object, query_property[item])
+                if data['results']['bindings']:
+                    printAnswer(data)
+                    answer_given = 1
+                    break
+            if not data['results']['bindings']:
+                query_object = getSearchObject(sub)
+                query_property = getSearchPropertyIterate(obj)
+                if query_object != '@' and query_property:
+                    for item in range(0, len(query_property)):  
+                        data = fireQuery(query_object, query_property[item])
+                        if data['results']['bindings']:
+                            printAnswer(data)
+                            answer_given = 1
+                            break
+    if answer_given == 0:
+        print("Unable to retrieve answer.")
 
 def answerQuesetionYesNo(parse):
     # Initialize lists.
@@ -395,25 +658,13 @@ def answerQuesetionYesNo(parse):
                             data = fireQueryYesNoNoProperty(query_subject, query_object)
                         if data.get('boolean') == True:
                             answer_given = 1
-        # if not data.get('boolean'):
-        #     query_object = getSearchObject(sub)
-        #     query_property = getSearchPropertyIterate(obj)
-        #     if query_object != '@' and query_property and query_subject != '@':
-        #         for item in range(0, len(query_property)):  
-        #             data = fireQueryYesNo(query_subject, query_property[item], query_object)
-        #             if data['boolean']:
-        #                 printAnswer(data)
-        #                 answer_given = 1
-        #                 break
     else:
         if (query_subject != '@'):
             query_object = getSearchObject(prop)
-            
             if query_object in code_dictionary:
                 query_object = code_dictionary.get(query_object)
             print("NO OBJECT",query_object)
             data = fireQueryYesNoNoProperty(query_object, query_subject)
-
             if data.get('boolean') == False:
                 data = fireQueryYesNoNoProperty(query_subject, query_object)
             if data.get('boolean') == True:
@@ -422,7 +673,6 @@ def answerQuesetionYesNo(parse):
         print('False')
     else:
         print('True')
-
 for w in sys.stdin:
     current_counter = 0
     typeOfQuestion(w)

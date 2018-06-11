@@ -71,16 +71,21 @@ def countOf(wList):
 def extractSubject(t, p, current_counter, sub):
     if token.dep_ == "nsubj" or token.dep_ == "attr" or token.dep_ == "dobj" or token.dep_ == "appos":
         sub = []
+        print(token.text, "!!!")
         for d in token.subtree:
+            print(d.text, "SUBTREEEEEEE")
             if d.text == "of":
                 current_counter = current_counter + 1
             if d.pos_ == 'VERB' or d.pos_ == 'NOUN':
+                print(d.lemma_, "lemmatized appended!")
                 sub.append(d.lemma_) 
             elif d.pos_ != "ADP":
                 sub.append(d.text)
+                print(d.text, " appended!")
             else:
                 if (d.text == last or current_counter != of_counter):
                     sub.append(d.text)
+                    print(d.text, " of appended!")
                 else:
                     break
         if sub[0] == 'the':
