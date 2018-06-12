@@ -316,8 +316,8 @@ def printAnswer(data):
     else:
         for item in data['results']['bindings']:
             for var in item:
-                sys.stdout.write('{}'.format(item[var]['value']))
-                sys.stdout.write('\n')
+                wf.write('\t{}'.format(item[var]['value']))
+    wf.write('\n')
 
 def checkIfCount(temp):
     how_check = 0
@@ -355,7 +355,7 @@ def cleanHowMany(obj):
         del obj[0]
     return obj
 
-def answerQuestionPossesive(parse):
+def answerQuestionPossesive(parse, question_number, reg, current_counter):
     url1 = 'https://query.wikidata.org/sparql'
     url2 = 'https://www.wikidata.org/w/api.php'
 
@@ -446,16 +446,15 @@ def answerQuestionPossesive(parse):
     json2 = requests.get(url2,paramsY).json()
     
     k = 0
+    wf.write('{}'.format(question_number))
     for result1 in json1['search']:
         for result2 in json2['search']: #iterate over all pairs X,Y
             query = 'SELECT ?responseLabel ?response WHERE {wd:'+("{}".format(result2['id']))+' wdt:'+("{}".format(result1['id']))+' ?response . SERVICE wikibase:label {bd:serviceParam wikibase:language "en" .}}'
             data = requests.get(url1, params={'query': query, 'format': 'json'}).json()
             for item in data['results']['bindings']:
                 for var in item:
-                    sys.stdout.write('{}'.format(item[var]['value']))
-                    sys.stdout.write('\n')
-                    k = k+1
-
+                    wf.write('\t{}'.format(item[var]['value']))
+    wf.write('\n');
     if(k<1):
         print('no response found')
 
@@ -465,7 +464,7 @@ def checkIfPossesive(parse):
             return True
     return False
 
-def typeOfQuestion(parse):
+def typeOfQuestion(parse, question_number, reg, current_counter):
     temp = nlp(parse)
     print(temp)
     if (temp[0].tag_ == "VBZ"):
@@ -476,7 +475,7 @@ def typeOfQuestion(parse):
         else:
             answerQuestionCount(parse, 'count')
     elif (checkIfPossesive(temp)):
-        answerQuestionPossesive(parse)
+        answerQuestionPossesive(parse, question_number, reg, current_counter)
     else:
         answerQuestionRegular(parse)
 
@@ -518,6 +517,7 @@ def alternate_parsing(w, answer):
 
     # Go through each token and extract the subject and object. FOR QUESTIONS
     # OTHER THAN YES/NO. This should be a function.
+    wf.write('{}'.format(question_number))
     for token in parse:
         print("\t".join((token.text, token.lemma_, token.pos_,token.tag_, token.dep_, token.head.lemma_)))
         sub = extractSubjectVersionTwo(token, parse, current_counter, sub, last, of_counter)
@@ -536,7 +536,7 @@ def alternate_parsing(w, answer):
             data = fireQuery(query_object, query_property[item])
             if data['results']['bindings']:
                 if answer == 'count':
-                    print(len(data['results']['bindings']))
+                    wf.write('\t{}'.format(len(data['results']['bindings'])))
                 else:
                     printAnswer(data)
                 answer_given = 1
@@ -549,13 +549,11 @@ def alternate_parsing(w, answer):
                     data = fireQuery(query_object, query_property[item])
                     if data['results']['bindings']:
                         if answer == 'count':
-                            print(len(data['results']['bindings']))
+                            wf.write('\t{}'.format(len(data['results']['bindings'])))
                         else:
                             printAnswer(data)
                         answer_given = 1
                         break
-    if answer_given == 0:
-        print("Unable to retrieve answer.")
 
 def answerQuestionCount(w, form):
 # Initialize lists.
@@ -615,11 +613,12 @@ def answerQuestionCount(w, form):
     print("OBJ = ", obj)
     print(query_object)
     print(query_property)
+    wf.write('{}'.format(question_number))
     if query_object != '@' and query_property:
         for item in range(0, len(query_property)):  
             data = fireQuery(query_object, query_property[item])
             if data['results']['bindings']:
-                print(len(data['results']['bindings']))
+                wf.write('\t{}'.format(len(data['results']['bindings'])))
                 answer_given = 1
                 break
         if not data['results']['bindings']:
@@ -629,11 +628,13 @@ def answerQuestionCount(w, form):
                 for item in range(0, len(query_property)):  
                     data = fireQuery(query_object, query_property[item])
                     if data['results']['bindings']:
-                        print(len(data['results']['bindings']))
+                        wf.write('\t{}'.format(len(data['results']['bindings'])))
                         answer_given = 1
                         break
     if answer_given == 0:
         alternate_parsing(w, 'count')
+    else:
+        wf.write('\n')
 
 def answerQuestionRegular(w):
     # Initialize lists.
@@ -683,7 +684,6 @@ def answerQuestionRegular(w):
             sub = extractSubjectVersionTwo(token, parse, current_counter, sub, last, of_counter)
     sub = inputParse(sub)
 
-    
     # Extract the search property and object to feed into the query.
     query_object = getSearchObject(obj, reg)
     query_property = getSearchPropertyIterate(sub, reg)
@@ -717,6 +717,8 @@ def answerQuesetionYesNo(w):
 
     parse = nlp(w.strip())
     
+    wf.write('{}', question_number)
+
     # Checks whether an answer has been given.
     answer_given = 0
 
@@ -783,11 +785,21 @@ def answerQuesetionYesNo(w):
             if data.get('boolean') == True:
                 answer_given = 1
     if answer_given == 0:
-        print('No')
+        wf.write('\t No')
     else:
-        print('Yes')
+        wf.write('\t Yes')
+    wf.write('\n')
 
-for w in sys.stdin:
-    reg = 0
-    current_counter = 0
-    typeOfQuestion(w)
+with open('test_questions.txt', 'r') as rf:
+    with open('answer_questions.txt', 'w') as wf:
+        reg = 0
+        question_number = 0
+        current_counter = 0
+        for line in rf:
+            question_number = question_number + 1
+            if question_number >= 10:
+                question = line[3:len(line)]
+            else:
+                question = line[2:len(line)]
+            print(question, question_number)
+            typeOfQuestion(question, question_number, reg, current_counter)

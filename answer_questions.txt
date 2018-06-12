@@ -1,0 +1,4 @@
+1	Bill Clinton	http://www.wikidata.org/entity/Q1124
+23	5
+4	1
+5	Pretoria	Cape Town	Bloemfontein
