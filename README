@@ -1,0 +1,55 @@
+Question and answering system - Language and Speech Technology
+                                Practicum
+
+Contributors:
+Arseniy Nikonov S2977419
+Gabriel Leuenberger S2716151
+Mihai Popescu S3192423
+Natalia Karpova S2853442
+
+INTRODUCTION:
+
+    The attachment includes two programs: program_file_input.py
+    and program_keyboard_input.py. Both programs implement the
+    same Question and Answering system, however program_file_input
+    reads questions from a file in the specified format and writes
+    the answers in another file in the specified format.
+    The program_keyboard_input.py program takes input from the
+    keyboard, one question at a time, and outputs the answer
+    on the screen.
+
+INSTRUCTIONS:
+
+    Run instructions for program_keyboard_input.py:
+        In order to run the program from the terminal,
+        use the command:
+            python3 program_keyboard_input.py
+        The program will then wait for a question.
+        Insert the question and then press enter.
+        Wait for the answer, then you may proceed to
+        enter another question or you can exit via CTRL+C
+        or CTRL+Z.
+
+    Run instructions for program_file_input.py:
+        In order to run the program from the terminal,
+        use the command:
+            python3 program_file_input.py
+        The program will take questions from a text file
+        present in the same directory as the program named:
+            test_questions.txt
+        The format of the questions is expected to be as
+        described in the slides of week 5. The program will
+        then read the questions from the file and write the
+        answers in a text file named:
+            answer_questions.txt
+        present in the same directory as the program. This file
+        is automatically created if it does not already exist in the
+        directory. The program terminates automatically after all
+        questions have been answered. The program may also be
+        terminated while it is running using CTRL+C or CTRL+Z.
+
+NOTES:
+
+    Two files are provided due to the fact that it is not entirely
+    clear whether the program should take input from a file or from
+    the keyboard, so both options are covered.
