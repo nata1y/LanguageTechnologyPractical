@@ -1,4 +1,24 @@
-1	Bill Clinton	http://www.wikidata.org/entity/Q1124
-23	5
+1	http://www.wikidata.org/entity/Q1124	Bill Clinton
+2	Yes
+3	5
 4	1
 5	Pretoria	Cape Town	Bloemfontein
+6	4808.72
+7	Kwon Oh-hyun
+8	Klaus Iohannis
+9	Mohammed VI of Morocco
+10
+11	Vladimir Putin
+12	water	chicken	sodium chloride	rice	rabbit	olive oil	Cynara scolymus	crocus	Phaseolus lunatus	green bean	tomato
+13	Ottawa
+14	John Lennon	Paul McCartney	Ringo Starr	George Harrison
+15	Mick Jagger	Keith Richards	Brian Jones	Ronnie Wood	Charlie Watts	Bill Wyman	Mick Taylor
+16	1287.36
+17	No
+18	Yes
+19	French	English
+20	Japan	Norway	United States of America	Finland	Poland	Lithuania	People's Republic of China	Belarus	Estonia	Latvia	Ukraine	Azerbaijan	Georgia	Kazakhstan	North Korea	Mongolia	Abkhazia	South Ossetia	Donetsk People's Republic	Luhansk People's Republic
+21	5
+22	Bucharest
+23	Port Blair
+24	Kim Jong-un

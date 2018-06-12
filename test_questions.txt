@@ -1,5 +1,24 @@
-1	Who is Hillary's husband? 
+1	Who is Hillary's husband?
 2   Is Romania in Europe?
 3   How many countries border Romania?
 4   How many presidents does Romania have?
 5   Give me the capitals of South Africa
+6   What is the altitude of Mont Blanc?
+7   Who is the CEO of Samsung?
+8   Who is the president of Romania?
+9   Who is the president of Maroc?
+10  Who is the president of glass?
+11  Who is the president of Russia?
+12  List the ingredients of paella.
+13  State the capital of Canada
+14  What are the members of the Beatles?
+15  Who are the members of The Rolling Stones?
+16  Rome has how large of an area?
+17  Is Japan in Europe?
+18  Is Belgium part of the Benelux?
+19  Give me the official languages of Canada
+20  Which are the borders of Russia?
+21  How many borders does Romania have?
+22  State the capital city of Romania
+23  Give me the capital of the Andaman and Nicobar Islands
+24  Give me the head of state of North Korea
